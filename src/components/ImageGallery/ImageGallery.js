@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import PendingView from 'components/PendingView';
 import ImageGalleryItem from 'components/ImageGalleryItem';
@@ -29,10 +29,12 @@ const searchParams = (value, page) =>
     page: page,
   });
 
-export default class ImageGallery extends Component {
-  state = { status: 'idle', images: [], countOfPages: null };
+export default function ImageGallery({ searchPhrase, onImageClick }) {
+  const [status, setStatus] = useState(STATUS_OPTIONS.IDLE);
+  const [images, setImages] = useState([]);
+  const [countOfPages, setCountOfPages] = useState(null);
 
-  fetchImages = async (searchPhrase, page) => {
+  const fetchImages = async (searchPhrase, page) => {
     if (searchPhrase === '') {
       throw new Error();
     }
@@ -44,12 +46,13 @@ export default class ImageGallery extends Component {
     if (arrayOfImages.length === 0) {
       throw new Error();
     }
-    this.setCountOfPages(parsedRes);
+    const countOfPages = getCountOfPages(parsedRes);
+    setCountOfPages(countOfPages);
     return arrayOfImages;
   };
 
-  handleFetchResult = result => {
-    this.setState({ status: STATUS_OPTIONS.RESOLVED });
+  const handleFetchResult = result => {
+    setStatus(STATUS_OPTIONS.RESOLVED);
 
     const newImages = result.map(
       ({ id, webformatURL, largeImageURL, tags }) => {
@@ -59,92 +62,82 @@ export default class ImageGallery extends Component {
     return newImages;
   };
 
-  handleLoadMoreClick = async evt => {
+  const handleLoadMoreClick = async evt => {
     PAGE += 1;
-    const { searchPhrase } = this.props;
-    const { images } = this.state;
 
-    this.setState({ status: STATUS_OPTIONS.PENDING });
-    const result = await this.fetchImages(searchPhrase, PAGE);
-    const newImages = this.handleFetchResult(result);
-    this.setState({ images: [...images, ...newImages] });
+    setStatus(STATUS_OPTIONS.PENDING);
+    // const result = await
+    fetchImages(searchPhrase, PAGE)
+      .then(handleFetchResult)
+      .then(newImages => setImages([...images, ...newImages]));
+    // const newImages = handleFetchResult(result);
+    // setImages([...images, ...newImages]);
   };
 
-  handleImageClick = evt => {
-    const { images } = this.state;
-    const { onImageClick } = this.props;
-
+  const handleImageClick = evt => {
     const selectedImage = images.find(
       image => image.id === Number(evt.currentTarget.id)
     );
     onImageClick(selectedImage);
   };
 
-  setCountOfPages = data => {
+  const getCountOfPages = data => {
     const totalImages = data.totalHits;
-    const countOfPages = Math.ceil(totalImages / PER_PAGE);
-    this.setState({ countOfPages: countOfPages });
+    return Math.ceil(totalImages / PER_PAGE);
   };
 
-  resetCountOfPages = () => {
-    this.setState({ countOfPages: null });
-  };
+  //не потрібно?
+  // componentDidMount() {
+  //   this.setState({ status: STATUS_OPTIONS.IDLE });
+  // }
 
-  componentDidMount() {
-    this.setState({ status: STATUS_OPTIONS.IDLE });
-  }
-
-  async componentDidUpdate(prevProps, prevState) {
-    const { searchPhrase } = this.props;
-
-    if (prevProps.searchPhrase !== searchPhrase) {
-      this.setState({ status: STATUS_OPTIONS.PENDING, images: [] });
-      PAGE = 1;
-
-      try {
-        const result = await this.fetchImages(searchPhrase, PAGE);
-        const newImages = this.handleFetchResult(result);
-        this.setState({ images: newImages });
-      } catch (error) {
-        this.setState({ status: STATUS_OPTIONS.REJECTED });
-        this.resetCountOfPages();
-      }
+  useEffect(() => {
+    if (!searchPhrase) {
+      return;
     }
-  }
 
-  render() {
-    const { status, images, countOfPages } = this.state;
+    setImages([]);
+    setStatus(STATUS_OPTIONS.PENDING);
+    PAGE = 1;
 
-    return (
-      <>
-        <ul className={s.gallery}>
-          {images?.map(image => (
-            <li
-              key={image.id}
-              id={image.id}
-              onClick={this.handleImageClick}
-              className={s.galleryItem}
-            >
-              <ImageGalleryItem url={image.webformatURL} alt={image.tags} />
-            </li>
-          ))}
-        </ul>
+    fetchImages(searchPhrase, PAGE)
+      .then(handleFetchResult)
+      .then(setImages)
+      .catch(error => {
+        setCountOfPages(null);
+        setStatus(STATUS_OPTIONS.REJECTED);
+      });
+  }, [searchPhrase]);
 
-        {status === 'resolved' && countOfPages > PAGE ? (
-          <Button
-            title="Load more"
-            onLoadMoreClick={this.handleLoadMoreClick}
-          ></Button>
-        ) : null}
+  return (
+    <>
+      <ul className={s.gallery}>
+        {images?.map(image => (
+          <li
+            key={image.id}
+            id={image.id}
+            onClick={handleImageClick}
+            className={s.galleryItem}
+          >
+            <ImageGalleryItem url={image.webformatURL} alt={image.tags} />
+          </li>
+        ))}
+      </ul>
 
-        {status === 'pending' && <PendingView />}
-        {status === 'rejected' && <ErrorView />}
-      </>
-    );
-  }
+      {status === STATUS_OPTIONS.RESOLVED && countOfPages > PAGE ? (
+        <Button
+          title="Load more"
+          onLoadMoreClick={handleLoadMoreClick}
+        ></Button>
+      ) : null}
 
-  static propTypes = {
-    searchPhrase: PropTypes.string,
-    onImageClick: PropTypes.func.isRequired,
-  };
+      {status === STATUS_OPTIONS.PENDING && <PendingView />}
+      {status === STATUS_OPTIONS.REJECTED && <ErrorView />}
+    </>
+  );
 }
+
+ImageGallery.propTypes = {
+  searchPhrase: PropTypes.string,
+  onImageClick: PropTypes.func.isRequired,
+};

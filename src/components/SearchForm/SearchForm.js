@@ -9,7 +9,7 @@ export default class SearchForm extends Component {
   };
 
   handleInputChange = evt => {
-    const enteredPhrase = evt.currentTarget.value;
+    const enteredPhrase = evt.target.value;
     this.setState({ enteredPhrase: enteredPhrase });
   };
 
