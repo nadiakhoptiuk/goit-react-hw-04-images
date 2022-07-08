@@ -28,7 +28,7 @@ const searchParams = (value, page) =>
     page: page,
   });
 
-export default function ImageGallery({ searchPhrase, onImageClick }) {
+export default function ImageGallery({ searchPhrase, getSelectedImage }) {
   const [status, setStatus] = useState(STATUS_OPTIONS.IDLE);
   const [images, setImages] = useState([]);
   const [countOfPages, setCountOfPages] = useState(null);
@@ -55,7 +55,9 @@ export default function ImageGallery({ searchPhrase, onImageClick }) {
       })
       .then(handleFetchResult)
       .then(newImages => {
-        page > 1 ? setImages([...images, ...newImages]) : setImages(newImages);
+        page > 1
+          ? setImages(prevState => [...prevState, ...newImages])
+          : setImages(newImages);
         setStatus(STATUS_OPTIONS.RESOLVED);
       })
       .catch(error => {
@@ -83,7 +85,7 @@ export default function ImageGallery({ searchPhrase, onImageClick }) {
     const selectedImage = images.find(
       image => image.id === Number(evt.currentTarget.id)
     );
-    onImageClick(selectedImage);
+    getSelectedImage(selectedImage);
   };
 
   const getCountOfPages = data => {
@@ -125,5 +127,5 @@ export default function ImageGallery({ searchPhrase, onImageClick }) {
 
 ImageGallery.propTypes = {
   searchPhrase: PropTypes.string,
-  onImageClick: PropTypes.func.isRequired,
+  getSelectedImage: PropTypes.func.isRequired,
 };

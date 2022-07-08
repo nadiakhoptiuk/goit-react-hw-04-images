@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ImageGallery from 'components/ImageGallery';
 import Searchbar from 'components/Searchbar';
 import Section from 'components/Section';
@@ -18,14 +18,22 @@ export default function App() {
     setSearchPhrase(enteredPhrase.trim());
   };
 
-  const createModal = selectedImage => {
+  const getSelectedImage = selectedImage => {
     setOpenedImage(selectedImage);
-    toggleModal();
   };
 
-  const toggleModal = () => {
-    setShowModal(!showModal);
-  };
+  const toggleModal = useCallback(() => {
+    setShowModal(prevState => !prevState);
+  }, []);
+
+  useEffect(() => {
+    if (JSON.stringify(openedImage) === '{}') {
+      setShowModal(false);
+      console.log('перша перевірка');
+      return;
+    }
+    toggleModal();
+  }, [openedImage, toggleModal]);
 
   return (
     <>
@@ -34,12 +42,12 @@ export default function App() {
         <Section>
           <ImageGallery
             searchPhrase={searchPhrase}
-            onImageClick={createModal}
+            getSelectedImage={getSelectedImage}
           />
         </Section>
       </main>
       {showModal && (
-        <Modal onModalClose={toggleModal}>
+        <Modal isModalOpen={showModal} setShowModal={toggleModal}>
           <img
             className={s.modalImage}
             src={openedImage.largeImageURL}
