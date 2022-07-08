@@ -29,7 +29,6 @@ export default function App() {
   useEffect(() => {
     if (JSON.stringify(openedImage) === '{}') {
       setShowModal(false);
-      console.log('перша перевірка');
       return;
     }
     toggleModal();
