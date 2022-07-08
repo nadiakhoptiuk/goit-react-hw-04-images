@@ -1,55 +1,53 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import ImageGallery from 'components/ImageGallery';
 import Searchbar from 'components/Searchbar';
 import Section from 'components/Section';
 import Modal from 'components/Modal';
 import s from './App.module.css';
 
-export default class App extends Component {
-  state = { searchPhrase: '', showModal: false, openedImage: {} };
+export default function App() {
+  const [searchPhrase, setSearchPhrase] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [openedImage, setOpenedImage] = useState({});
 
-  handleFormSubmit = enteredPhrase => {
+  const handleFormSubmit = enteredPhrase => {
     if (enteredPhrase.trim() === '') {
       return;
     }
 
-    this.setState({ searchPhrase: enteredPhrase.trim() });
+    setSearchPhrase(enteredPhrase.trim());
   };
 
-  createModal = selectedImage => {
-    this.setState({ openedImage: selectedImage });
-    this.toggleModal();
+  const createModal = selectedImage => {
+    setOpenedImage(selectedImage);
+    toggleModal();
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  const toggleModal = () => {
+    setShowModal(!showModal);
   };
 
-  render() {
-    const { searchPhrase, showModal, openedImage } = this.state;
-
-    return (
-      <>
-        <Searchbar onFormSubmit={this.handleFormSubmit} />
-        <main>
-          <Section>
-            <ImageGallery
-              searchPhrase={searchPhrase}
-              onImageClick={this.createModal}
-            />
-          </Section>
-        </main>
-        {showModal && (
-          <Modal onModalClose={this.toggleModal}>
-            <img
-              className={s.modalImage}
-              src={openedImage.largeImageURL}
-              alt={openedImage.tags}
-              width={1280}
-            />
-          </Modal>
-        )}
-      </>
-    );
-  }
+  return (
+    <>
+      <Searchbar onFormSubmit={handleFormSubmit} />
+      <main>
+        <Section>
+          <ImageGallery
+            searchPhrase={searchPhrase}
+            onImageClick={createModal}
+          />
+        </Section>
+      </main>
+      {showModal && (
+        <Modal onModalClose={toggleModal}>
+          <img
+            className={s.modalImage}
+            src={openedImage.largeImageURL}
+            alt={openedImage.tags}
+            width={1280}
+          />
+        </Modal>
+      )}
+    </>
+  );
 }

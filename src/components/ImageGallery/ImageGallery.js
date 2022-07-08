@@ -38,7 +38,6 @@ export default function ImageGallery({ searchPhrase, onImageClick }) {
     if (searchPhrase === '') {
       return;
     }
-
     setStatus(STATUS_OPTIONS.PENDING);
 
     fetch(`${API_URL}?&${searchParams(searchPhrase, page)}`)
