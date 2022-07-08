@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { BsSearch } from 'react-icons/bs';
 import s from './SearchForm.module.css';
 
 export default function SearchForm({ onFormSubmit }) {
   const [enteredPhrase, setEnteredPhrase] = useState('');
+
+  const inputForSearchRef = useRef(null);
+
+  useEffect(() => {
+    inputForSearchRef?.current?.focus();
+  }, []);
 
   const handleInputChange = ({ target: { value } }) => {
     const enteredPhrase = value;
@@ -35,6 +41,7 @@ export default function SearchForm({ onFormSubmit }) {
         autoFocus
         placeholder="Search images and photos"
         onChange={handleInputChange}
+        ref={inputForSearchRef}
       />
     </form>
   );
