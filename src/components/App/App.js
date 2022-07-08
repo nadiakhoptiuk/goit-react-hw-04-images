@@ -9,6 +9,7 @@ export default function App() {
   const [searchPhrase, setSearchPhrase] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [openedImage, setOpenedImage] = useState({});
+  const [page, setPage] = useState(1);
 
   const handleFormSubmit = enteredPhrase => {
     if (enteredPhrase.trim() === '') {
@@ -16,6 +17,7 @@ export default function App() {
     }
 
     setSearchPhrase(enteredPhrase.trim());
+    setPage(1);
   };
 
   const getSelectedImage = selectedImage => {
@@ -42,6 +44,8 @@ export default function App() {
           <ImageGallery
             searchPhrase={searchPhrase}
             getSelectedImage={getSelectedImage}
+            page={page}
+            setPage={setPage}
           />
         </Section>
       </main>

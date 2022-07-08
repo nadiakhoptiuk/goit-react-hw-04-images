@@ -28,11 +28,15 @@ const searchParams = (value, page) =>
     page: page,
   });
 
-export default function ImageGallery({ searchPhrase, getSelectedImage }) {
+export default function ImageGallery({
+  searchPhrase,
+  getSelectedImage,
+  page,
+  setPage,
+}) {
   const [status, setStatus] = useState(STATUS_OPTIONS.IDLE);
   const [images, setImages] = useState([]);
   const [countOfPages, setCountOfPages] = useState(null);
-  const [page, setPage] = useState(1);
 
   const fetchImages = useCallback(() => {
     if (searchPhrase === '') {
@@ -59,6 +63,11 @@ export default function ImageGallery({ searchPhrase, getSelectedImage }) {
           ? setImages(prevState => [...prevState, ...newImages])
           : setImages(newImages);
         setStatus(STATUS_OPTIONS.RESOLVED);
+      })
+      .then(() => {
+        if (page === 1) {
+          window.scrollTo(0, 0);
+        }
       })
       .catch(error => {
         setImages([]);
@@ -128,4 +137,6 @@ export default function ImageGallery({ searchPhrase, getSelectedImage }) {
 ImageGallery.propTypes = {
   searchPhrase: PropTypes.string,
   getSelectedImage: PropTypes.func.isRequired,
+  page: PropTypes.number.isRequired,
+  setPage: PropTypes.func.isRequired,
 };
