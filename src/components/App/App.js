@@ -9,6 +9,10 @@ export default class App extends Component {
   state = { searchPhrase: '', showModal: false, openedImage: {} };
 
   handleFormSubmit = enteredPhrase => {
+    if (enteredPhrase.trim() === '') {
+      return;
+    }
+
     this.setState({ searchPhrase: enteredPhrase.trim() });
   };
 

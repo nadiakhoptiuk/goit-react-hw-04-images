@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import PendingView from 'components/PendingView';
 import ImageGalleryItem from 'components/ImageGalleryItem';
@@ -16,7 +16,6 @@ const STATUS_OPTIONS = {
 const API_URL = 'https://pixabay.com/api/';
 const API_KEY = '27979980-56564682deb2f4cc3aa0cce1c';
 const PER_PAGE = 12;
-let PAGE = 1;
 
 const searchParams = (value, page) =>
   new URLSearchParams({
@@ -33,45 +32,52 @@ export default function ImageGallery({ searchPhrase, onImageClick }) {
   const [status, setStatus] = useState(STATUS_OPTIONS.IDLE);
   const [images, setImages] = useState([]);
   const [countOfPages, setCountOfPages] = useState(null);
+  const [page, setPage] = useState(1);
 
-  const fetchImages = async (searchPhrase, page) => {
+  const fetchImages = useCallback(() => {
     if (searchPhrase === '') {
-      throw new Error();
+      return;
     }
 
-    const res = await fetch(`${API_URL}?&${searchParams(searchPhrase, page)}`);
-    const parsedRes = await res.json();
-    const arrayOfImages = await parsedRes.hits;
+    setStatus(STATUS_OPTIONS.PENDING);
 
-    if (arrayOfImages.length === 0) {
-      throw new Error();
-    }
-    const countOfPages = getCountOfPages(parsedRes);
-    setCountOfPages(countOfPages);
-    return arrayOfImages;
-  };
+    fetch(`${API_URL}?&${searchParams(searchPhrase, page)}`)
+      .then(res => res.json())
+      .then(res => {
+        const arrayOfImages = res.hits;
+
+        if (arrayOfImages.length === 0) {
+          throw new Error();
+        }
+
+        const countOfPages = getCountOfPages(res);
+        setCountOfPages(countOfPages);
+        return arrayOfImages;
+      })
+      .then(handleFetchResult)
+      .then(newImages => {
+        page > 1 ? setImages([...images, ...newImages]) : setImages(newImages);
+        setStatus(STATUS_OPTIONS.RESOLVED);
+      })
+      .catch(error => {
+        setImages([]);
+        setCountOfPages(null);
+        setStatus(STATUS_OPTIONS.REJECTED);
+      });
+  }, [page, searchPhrase]);
 
   const handleFetchResult = result => {
-    setStatus(STATUS_OPTIONS.RESOLVED);
-
     const newImages = result.map(
       ({ id, webformatURL, largeImageURL, tags }) => {
         return { id, webformatURL, largeImageURL, tags };
       }
     );
+
     return newImages;
   };
 
-  const handleLoadMoreClick = async evt => {
-    PAGE += 1;
-
-    setStatus(STATUS_OPTIONS.PENDING);
-    // const result = await
-    fetchImages(searchPhrase, PAGE)
-      .then(handleFetchResult)
-      .then(newImages => setImages([...images, ...newImages]));
-    // const newImages = handleFetchResult(result);
-    // setImages([...images, ...newImages]);
+  const handleLoadMoreClick = evt => {
+    setPage(page + 1);
   };
 
   const handleImageClick = evt => {
@@ -86,28 +92,9 @@ export default function ImageGallery({ searchPhrase, onImageClick }) {
     return Math.ceil(totalImages / PER_PAGE);
   };
 
-  //не потрібно?
-  // componentDidMount() {
-  //   this.setState({ status: STATUS_OPTIONS.IDLE });
-  // }
-
   useEffect(() => {
-    if (!searchPhrase) {
-      return;
-    }
-
-    setImages([]);
-    setStatus(STATUS_OPTIONS.PENDING);
-    PAGE = 1;
-
-    fetchImages(searchPhrase, PAGE)
-      .then(handleFetchResult)
-      .then(setImages)
-      .catch(error => {
-        setCountOfPages(null);
-        setStatus(STATUS_OPTIONS.REJECTED);
-      });
-  }, [searchPhrase]);
+    fetchImages();
+  }, [fetchImages]);
 
   return (
     <>
@@ -124,7 +111,7 @@ export default function ImageGallery({ searchPhrase, onImageClick }) {
         ))}
       </ul>
 
-      {status === STATUS_OPTIONS.RESOLVED && countOfPages > PAGE ? (
+      {status === STATUS_OPTIONS.RESOLVED && countOfPages > page ? (
         <Button
           title="Load more"
           onLoadMoreClick={handleLoadMoreClick}
